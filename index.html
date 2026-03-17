@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣廟宇文化配對遊戲 - Temple Culture Match</title>
+    <style>
+        :root {
+            --temple-red: #b32428;
+            --temple-gold: #f1c40f;
+            --temple-dark: #2c3e50;
+            --wood-brown: #5d4037;
+            --card-back: #d35400;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #f9f4e8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            color: var(--temple-dark);
+        }
+
+        h1 {
+            color: var(--temple-red);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* 遊戲網格 */
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        @media (max-width: 600px) {
+            .game-container { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        /* 卡片樣式 */
+        .card {
+            aspect-ratio: 3/4;
+            background-color: transparent;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched .card-inner {
+            border: 3px solid #27ae60;
+            box-shadow: 0 0 15px #2ecc71;
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .card-back {
+            background-color: var(--card-back);
+            background-image: repeating-conic-gradient(from 45deg, #e67e22 0deg 90deg, #d35400 90deg 180deg);
+            background-size: 20px 20px;
+            color: white;
+            font-size: 3rem;
+        }
+
+        .card-front {
+            background-color: white;
+            color: var(--temple-dark);
+            transform: rotateY(180deg);
+            border: 2px solid var(--temple-gold);
+        }
+
+        .card svg {
+            width: 70%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .card-text {
+            font-size: 1rem;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .pinyin {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .side-note {
+            font-size: 0.7rem;
+            color: var(--temple-red);
+            margin-top: 4px;
+        }
+
+        /* 結算畫面 */
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        button {
+            padding: 10px 25px;
+            font-size: 1.2rem;
+            background: var(--temple-gold);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        button:hover { background: #f39c12; }
+    </style>
+</head>
+<body>
+
+    <h1>🏮 廟宇文化配對遊戲 🏮</h1>
+    <div class="stats">配對次數 (Moves): <span id="moves">0</span></div>
+
+    <div class="game-container" id="gameBoard">
+        </div>
+
+    <div id="overlay">
+        <h2 style="font-size: 3rem;">✨ 大吉 (Excellent) ✨</h2>
+        <p>你已精通台灣廟宇文化禮儀！</p>
+        <p>總共花了 <span id="final-moves">0</span> 步</p>
+        <button onclick="resetGame()">重新開始</button>
+    </div>
+
+    <script>
+        // 定義 10 組配對數據 (邏輯配對)
+        const pairs = [
+            {
+                a: { type: 'img', content: 'dragon-gate', note: '(面對廟宇右側)' },
+                b: { type: 'text', content: '龍門進', pinyin: 'Lóng mén jìn' }
+            },
+            {
+                a: { type: 'img', content: 'tiger-gate', note: '(面對廟宇左側)' },
+                b: { type: 'text', content: '虎門出', pinyin: 'Hǔ mén chū' }
+            },
+            {
+                a: { type: 'text', content: '天后宮', pinyin: 'Tiānhòu gōng' },
+                b: { type: 'text', content: '媽祖', pinyin: 'Māzǔ' }
+            },
+            {
+                a: { type: 'text', content: '孔廟', pinyin: 'Kǒngmiào' },
+                b: { type: 'text', content: '孔子', pinyin: 'Kǒngzǐ' }
+            },
+            {
+                a: { type: 'text', content: '福德宮', pinyin: 'Fúdégōng' },
+                b: { type: 'text', content: '土地公', pinyin: 'Tǔdìgōng' }
+            },
+            {
+                a: { type: 'text', content: '行天宮', pinyin: 'Xíngtiāngōng' },
+                b: { type: 'text', content: '關聖帝君', pinyin: 'Guānshèng dìjūn' }
+            },
+            {
+                a: { type: 'text', content: '文昌帝君', pinyin: 'Wénchāng dìjūn' },
+                b: { type: 'text', content: '保佑學業、考試', pinyin: 'Xiéyè kǎoshì' }
+            },
+            {
+                a: { type: 'text', content: '財神爺', pinyin: 'Cáishén yé' },
+                b: { type: 'text', content: '保佑財運、事業', pinyin: 'Cáiyùn shìyè' }
+            },
+            {
+                a: { type: 'img', content: 'moon-blocks' },
+                b: { type: 'text', content: '擲筊', pinyin: 'Zhíjiǎo - 請示神明' }
+            },
+            {
+                a: { type: 'img', content: 'fortune-sticks' },
+                b: { type: 'text', content: '抽籤', pinyin: 'Chōuqiān - 尋求指引' }
+            }
+        ];
+
+        // SVG 代碼庫
+        const svgs = {
+            'dragon-gate': `<svg viewBox="0 0 100 100"><path d="M20 80 Q 50 10 80 80" fill="none" stroke="#b32428" stroke-width="5"/><text x="50" y="70" font-size="20" text-anchor="middle">🐉</text></svg>`,
+            'tiger-gate': `<svg viewBox="0 0 100 100"><path d="M20 80 Q 50 10 80 80" fill="none" stroke="#2c3e50" stroke-width="5"/><text x="50" y="70" font-size="20" text-anchor="middle">🐅</text></svg>`,
+            'moon-blocks': `<svg viewBox="0 0 100 100"><ellipse cx="35" cy="50" rx="10" ry="25" fill="#b32428" transform="rotate(-20 35 50)"/><ellipse cx="65" cy="50" rx="10" ry="25" fill="#b32428" transform="rotate(20 65 50)"/></svg>`,
+            'fortune-sticks': `<svg viewBox="0 0 100 100"><rect x="35" y="40" width="30" height="40" fill="#5d4037"/><line x1="40" y1="20" x2="40" y2="40" stroke="#f1c40f" stroke-width="3"/><line x1="50" y1="15" x2="50" y2="40" stroke="#f1c40f" stroke-width="3"/><line x1="60" y1="20" x2="60" y2="40" stroke="#f1c40f" stroke-width="3"/></svg>`
+        };
+
+        let cardsData = [];
+        let flippedCards = [];
+        let matchedCount = 0;
+        let moves = 0;
+
+        function initData() {
+            cardsData = [];
+            pairs.forEach((p, index) => {
+                cardsData.push({ ...p.a, pairId: index });
+                cardsData.push({ ...p.b, pairId: index });
+            });
+            cardsData.sort(() => Math.random() - 0.5);
+        }
+
+        function createBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            cardsData.forEach((data, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.pairId = data.pairId;
+                
+                let contentHTML = '';
+                if(data.type === 'img') {
+                    contentHTML = svgs[data.content] + (data.note ? `<div class="side-note">${data.note}</div>` : '');
+                } else {
+                    contentHTML = `<div class="card-text">${data.content}<br><span class="pinyin">${data.pinyin}</span></div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-back">卍</div>
+                        <div class="card-front">${contentHTML}</div>
+                    </div>
+                `;
+                card.addEventListener('click', flipCard);
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (flippedCards.length === 2 || this.classList.contains('flipped') || this.classList.contains('matched')) return;
+
+            this.classList.add('flipped');
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves').innerText = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [c1, c2] = flippedCards;
+            if (c1.dataset.pairId === c2.dataset.pairId) {
+                c1.classList.add('matched');
+                c2.classList.add('matched');
+                matchedCount++;
+                flippedCards = [];
+                if (matchedCount === pairs.length) {
+                    setTimeout(showWin, 500);
+                }
+            } else {
+                setTimeout(() => {
+                    c1.classList.remove('flipped');
+                    c2.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        function showWin() {
+            document.getElementById('final-moves').innerText = moves;
+            document.getElementById('overlay').style.display = 'flex';
+        }
+
+        function resetGame() {
+            moves = 0;
+            matchedCount = 0;
+            flippedCards = [];
+            document.getElementById('moves').innerText = '0';
+            document.getElementById('overlay').style.display = 'none';
+            initData();
+            createBoard();
+        }
+
+        // 啟動遊戲
+        initData();
+        createBoard();
+    </script>
+</body>
+</html>
