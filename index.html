@@ -2,202 +2,356 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣廟宇文化配對遊戲</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>闖關遊戲——廟宇文化</title>
     <style>
-        :root {
-            --temple-red: #8e1a1a;
-            --temple-gold: #d4af37;
-            --bg-dark: #1a0505;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: var(--bg-dark);
-            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            color: white; display: flex; flex-direction: column; align-items: center;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Press Start 2P', cursive, "Microsoft JhengHei", sans-serif;
         }
 
-        .header-section { text-align: center; margin-top: 10px; margin-bottom: 5px; }
-        h1 { font-size: 1.2rem; margin: 0; color: var(--temple-gold); }
-        
-        .instructions { font-size: 0.8rem; line-height: 1.4; color: #ddd; margin-top: 4px; }
-        .instructions b { color: var(--temple-gold); font-weight: bold; }
-
-        .stats { font-size: 0.9rem; margin: 5px 0; }
-
-        /* 5x4 網格 */
-        .game-container {
-            display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr);
-            gap: 8px; width: 95vw; max-width: 800px; height: 70vh; perspective: 1000px;
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .card { position: relative; width: 100%; height: 100%; cursor: pointer; }
-        .card-inner {
-            position: relative; width: 100%; height: 100%;
-            transition: transform 0.5s; transform-style: preserve-3d; border-radius: 6px;
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #001133, #003366);
+            touch-action: none;
         }
 
-        .card.flipped .card-inner { transform: rotateY(180deg); }
-        .card.matched { opacity: 0.4; cursor: default; transition: opacity 0.5s; }
-
-        .card-front, .card-back {
-            position: absolute; width: 100%; height: 100%; top: 0; left: 0;
-            backface-visibility: hidden; -webkit-backface-visibility: hidden;
-            border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            color: white;
+            padding: 20px;
             box-sizing: border-box;
+            text-shadow: 2px 2px #000;
         }
 
-        /* 華麗背面 */
-        .card-back {
-            background: radial-gradient(circle, #b32428, #7a1111);
-            border: 2px solid var(--temple-gold); z-index: 2;
-        }
-        .card-back::after { content: "福"; font-size: 1.8rem; color: var(--temple-gold); font-family: "標楷體", serif; text-shadow: 0 0 5px rgba(212, 175, 55, 0.5); }
-
-        /* 正面樣式 */
-        .card-front {
-            background-color: #fff; transform: rotateY(180deg); z-index: 1;
-            border: 1px solid var(--temple-gold); color: #222; overflow: hidden;
-        }
-
-        /* 圖片縮放：確保填滿 */
-        .real-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        
-        .img-overlay {
-            position: absolute; bottom: 0; width: 100%;
-            background: rgba(142, 26, 26, 0.85); color: #fff;
-            font-size: 0.65rem; text-align: center; padding: 3px 0; font-weight: bold;
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            pointer-events: auto;
+            text-align: center;
         }
 
-        /* 文字卡樣式 */
-        .text-container { padding: 6px; text-align: center; width: 100%; box-sizing: border-box; }
-        .main-term {
-            font-size: 0.9rem; font-weight: 900; color: #b32428;
-            display: block; border-bottom: 2px solid var(--temple-gold); margin-bottom: 4px; padding-bottom: 3px;
-        }
-        .sub-desc { font-size: 0.7rem; color: #444; display: block; line-height: 1.2; font-weight: 500; }
+        .hidden { display: none !important; }
 
-        #overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.96); flex-direction: column; justify-content: center; align-items: center; z-index: 999;
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #ffcc00;
+            border: 4px solid #fff;
+            color: #000;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: inherit;
         }
-        button { padding: 12px 30px; background: var(--temple-gold); border: none; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 1rem; }
 
-        @media (max-width: 600px) {
-            .main-term { font-size: 0.75rem; }
-            .sub-desc { font-size: 0.6rem; }
-        }
+        button:active { transform: scale(0.95); }
+
+        h1 { font-size: 24px; color: #ffcc00; margin-bottom: 30px; line-height: 1.5; }
     </style>
 </head>
 <body>
 
-    <div class="header-section">
-        <h1>🏮 台灣廟宇文化配對 🏮</h1>
-        <div class="instructions">
-            請翻開卡牌，將<b>「圖片」</b>與正確的<b>「文字」</b>配對。<br>
-            Please flip the cards to match the <b>Images</b> with the correct <b>Text</b>.
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-layer">
+        <div id="start-screen" class="screen">
+            <h1>闖關遊戲<br>——廟宇文化——</h1>
+            <p style="color: #aaa;">滑鼠/觸控移動，點擊發射</p>
+            <button onclick="startGame()">開始遊戲</button>
+        </div>
+
+        <div id="game-over-screen" class="screen hidden">
+            <h1 id="end-title">遊戲結束</h1>
+            <p id="end-score"></p>
+            <button onclick="location.reload()">重新挑戰</button>
         </div>
     </div>
+</div>
 
-    <div class="stats">Moves: <span id="moves">0</span></div>
-    
-    <div class="game-container" id="gameBoard"></div>
+<script>
+/** 遊戲資料設定 **/
+const questions = [
+    { q: "財神爺\n(Cáishén yé)", a: "保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", options: ["保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", "保佑健康平安", "保佑航海安全"] },
+    { q: "文昌帝君\n(Wénchāng dìjūn)", a: "保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", options: ["保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", "保佑生意興隆", "保佑姻緣美滿"] },
+    { q: "天后宮\n(Tiānhòu gōng)", a: "媽祖\n(Māzǔ)", options: ["媽祖\n(Māzǔ)", "觀世音", "關聖帝君"] },
+    { q: "孔廟\n(Kǒngmiào)", a: "孔子\n(Kǒngzǐ)", options: ["孔子\n(Kǒngzǐ)", "老子", "孟子"] },
+    { q: "福德宮\n(Fúdégōng)", a: "土地公\n(Tǔdìgōng)", options: ["土地公\n(Tǔdìgōng)", "城隍爺", "月下老人"] },
+    { q: "行天宮\n(Xíngtiāngōng)", a: "關聖帝君\n(Guānshèng dìjūn)", options: ["關聖帝君\n(Guānshèng dìjūn)", "保生大帝", "彌勒佛"] },
+    { q: "龍門進\n(Lóng mén jìn)", a: "從廟宇右側門口進入", options: ["從廟宇右側門口進入", "從廟宇左側門口進入", "從正門直接進入"] },
+    { q: "虎門出\n(Hǔ mén chū)", a: "從廟宇左側門口出去", options: ["從廟宇左側門口出去", "從廟宇右側門口出去", "從後門出去"] },
+    { q: "擲筊\n(Zhíjiǎo)", a: "請示神明\n(qǐngshì shénmíng)", options: ["請示神明\n(qǐngshì shénmíng)", "燒香禮拜", "清理桌面"] },
+    { q: "抽籤\n(Chōuqiān)", a: "尋求指引\n(xúnqiú zhǐyǐn)", options: ["尋求指引\n(xúnqiú zhǐyǐn)", "祈求財富", "還願儀式"] }
+];
 
-    <div id="overlay">
-        <h2 style="color: var(--temple-gold); font-size: 3rem; margin-bottom: 10px;">🎊 大吉 🎊</h2>
-        <p style="font-size: 1.2rem;">恭喜完成挑戰！<br>Congratulations!</p>
-        <button onclick="resetGame()">再次挑戰 (Play Again)</button>
-    </div>
+/** 基礎設定 **/
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let width, height;
+let player, bullets = [], enemies = [], particles = [];
+let currentLevel = 0;
+let hp = 3;
+let gameState = 'START'; // START, PLAYING, LEVEL_UP, GAMEOVER
+let audioCtx;
 
-    <script>
-        // 使用更精確的台灣文化相關圖源
-        const images = {
-            'caishen': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Caishen.jpg/400px-Caishen.jpg', 
-            'wenchang': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Wenchang_Dijun.jpg/400px-Wenchang_Dijun.jpg',
-            'tianhou': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Taipei_Mazu_Temple.jpg/400px-Taipei_Mazu_Temple.jpg',
-            'kong': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Taipei_Confucius_Temple.jpg/400px-Taipei_Confucius_Temple.jpg',
-            'fude': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Tudi_Gong.jpg/400px-Tudi_Gong.jpg',
-            'xingtian': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Xingtian_Temple.jpg/400px-Xingtian_Temple.jpg',
-            'right-gate': 'https://cdn.pixabay.com/photo/2018/11/24/02/10/temple-3834854_1280.jpg', // 龍門示意
-            'left-gate': 'https://cdn.pixabay.com/photo/2021/01/21/11/55/temple-5937144_1280.jpg',  // 虎門示意
-            '筊': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Jiao-bei.jpg/400px-Jiao-bei.jpg',
-            'sticks': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Fortune_sticks.jpg/400px-Fortune_sticks.jpg'
-        };
+function initCanvas() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+}
 
-        const pairs = [
-            { img: 'caishen', main: '財神爺(Cáishén yé)', sub: '保佑財運、事業 (bǎoyòu cáiyùn shìyè)' },
-            { img: 'wenchang', main: '文昌帝君(Wénchāng dìjūn)', sub: '保佑學業、考試 (bǎoyòu xiéyè kǎoshì)' },
-            { img: 'tianhou', main: '天后宮(Tiānhòu gōng)', sub: '媽祖 (Māzǔ)' },
-            { img: 'kong', main: '孔廟(Kǒngmiào)', sub: '孔子 (Kǒngzǐ)' },
-            { img: 'fude', main: '福德宮(Fúdégōng)', sub: '土地公 (Tǔdìgōng)' },
-            { img: 'xingtian', main: '行天宮(Xíngtiāngōng)', sub: '關聖帝君 (Guānshèng dìjūn)' },
-            { img: 'right-gate', main: '龍門進(Lóng mén jìn)', sub: '', note: '面對廟宇右側' },
-            { img: 'left-gate', main: '虎門出(Hǔ mén chū)', sub: '', note: '面對廟宇左側' },
-            { img: '筊', main: '擲筊(Zhíjiǎo)', sub: '請示神明 (qǐngshì shénmíng)' },
-            { img: 'sticks', main: '抽籤(Chōuqiān)', sub: '尋求指引 (xúnqiú zhǐyǐn)' }
-        ];
+window.addEventListener('resize', initCanvas);
+initCanvas();
 
-        let cardsData = [];
-        let flippedCards = [];
-        let moves = 0;
-        let matched = 0;
+/** 音效引擎 **/
+function playSound(type) {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
 
-        function init() {
-            cardsData = [];
-            pairs.forEach((p, i) => {
-                cardsData.push({ type: 'img', content: images[p.img], note: p.note, id: i });
-                cardsData.push({ type: 'text', main: p.main, sub: p.sub, id: i });
-            });
-            cardsData.sort(() => Math.random() - 0.5);
-            const board = document.getElementById('gameBoard');
-            board.innerHTML = '';
-            cardsData.forEach((d, i) => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-inner" onclick="flip(this)" data-id="${d.id}">
-                        <div class="card-back"></div>
-                        <div class="card-front">
-                            ${d.type === 'img' ? 
-                                `<img src="${d.content}" class="real-img" loading="lazy">
-                                 ${d.note ? `<div class="img-overlay">${d.note}</div>` : ''}` : 
-                                `<div class="text-container"><span class="main-term">${d.main}</span><span class="sub-desc">${d.sub}</span></div>`
-                            }
-                        </div>
-                    </div>`;
-                board.appendChild(card);
-            });
-        }
+    const now = audioCtx.currentTime;
+    if (type === 'shoot') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.1);
+        osc.start(); osc.stop(now + 0.1);
+    } else if (type === 'hit') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.2);
+        osc.start(); osc.stop(now + 0.2);
+    } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.3);
+        osc.start(); osc.stop(now + 0.3);
+    }
+}
 
-        function flip(el) {
-            if (flippedCards.length === 2 || el.parentElement.classList.contains('flipped') || el.parentElement.classList.contains('matched')) return;
-            el.parentElement.classList.add('flipped');
-            flippedCards.push(el);
-            if (flippedCards.length === 2) {
-                moves++; document.getElementById('moves').innerText = moves;
-                if (flippedCards[0].dataset.id === flippedCards[1].dataset.id) {
-                    flippedCards.forEach(c => c.parentElement.classList.add('matched'));
-                    matched++;
-                    flippedCards = [];
-                    if (matched === 10) setTimeout(() => document.getElementById('overlay').style.display = 'flex', 600);
+/** 遊戲物件 **/
+class Player {
+    constructor() {
+        this.w = 120;
+        this.h = 80;
+        this.x = width / 2;
+        this.y = height - 120;
+    }
+    draw() {
+        // 畫像素風飛機
+        ctx.fillStyle = '#ff3333';
+        ctx.fillRect(this.x - 20, this.y, 40, 40); // 機身
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(this.x - 40, this.y + 10, 80, 10); // 機翼
+        
+        // 顯示題目
+        ctx.fillStyle = 'white';
+        ctx.font = '14px "Microsoft JhengHei"';
+        ctx.textAlign = 'center';
+        const lines = questions[currentLevel].q.split('\n');
+        lines.forEach((line, i) => {
+            ctx.fillText(line, this.x, this.y + 65 + (i * 18));
+        });
+    }
+}
+
+class Bullet {
+    constructor(x, y) { this.x = x; this.y = y; this.r = 5; }
+    update() { this.y -= 10; }
+    draw() {
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(this.x - 4, this.y - 4, 8, 8);
+    }
+}
+
+class Enemy {
+    constructor(text, isCorrect, index) {
+        this.text = text;
+        this.isCorrect = isCorrect;
+        this.w = 140;
+        this.h = 70;
+        this.x = (width / 4) * (index + 1) - this.w / 2;
+        this.y = -100;
+        this.speed = 1.5 + (currentLevel * 0.2);
+    }
+    update() { this.y += this.speed; }
+    draw() {
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(this.x, this.y, this.w, this.h);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(this.x, this.y, this.w, this.h);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = '12px "Microsoft JhengHei"';
+        const lines = this.text.split('\n');
+        lines.forEach((line, i) => {
+            ctx.fillText(line, this.x + this.w / 2, this.y + 30 + (i * 18));
+        });
+    }
+}
+
+/** 邏輯控制 **/
+function spawnEnemies() {
+    enemies = [];
+    const qData = questions[currentLevel];
+    const shuffled = [...qData.options].sort(() => Math.random() - 0.5);
+    shuffled.forEach((opt, i) => {
+        enemies.push(new Enemy(opt, opt === qData.a, i));
+    });
+}
+
+function startGame() {
+    document.getElementById('start-screen').classList.add('hidden');
+    gameState = 'PLAYING';
+    player = new Player();
+    hp = 3;
+    currentLevel = 0;
+    spawnEnemies();
+    requestAnimationFrame(gameLoop);
+}
+
+function nextLevel() {
+    currentLevel++;
+    if (currentLevel >= questions.length) {
+        endGame(true);
+    } else {
+        spawnEnemies();
+    }
+}
+
+function endGame(win) {
+    gameState = 'GAMEOVER';
+    document.getElementById('game-over-screen').classList.remove('hidden');
+    document.getElementById('end-title').innerText = win ? "恭喜通關！" : "再接再厲！";
+    document.getElementById('end-score').innerText = `最終關卡：第 ${currentLevel + 1} 關`;
+}
+
+/** 繪製循環 **/
+function gameLoop() {
+    if (gameState !== 'PLAYING') return;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // UI: HP and Level
+    ctx.fillStyle = '#ffcc00';
+    ctx.font = '16px "Press Start 2P"';
+    ctx.textAlign = 'left';
+    ctx.fillText(`LV: ${currentLevel + 1}/10`, 20, 40);
+    ctx.fillText(`HP: ${'❤️'.repeat(hp)}`, 20, 70);
+
+    // Player
+    player.draw();
+
+    // Bullets
+    bullets.forEach((b, bi) => {
+        b.update();
+        b.draw();
+        if (b.y < 0) bullets.splice(bi, 1);
+        
+        enemies.forEach((e, ei) => {
+            if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
+                bullets.splice(bi, 1);
+                if (e.isCorrect) {
+                    playSound('hit');
+                    nextLevel();
                 } else {
-                    setTimeout(() => {
-                        flippedCards.forEach(c => c.parentElement.classList.remove('flipped'));
-                        flippedCards = [];
-                    }, 1000);
+                    playSound('error');
+                    hp--;
+                    enemies.splice(ei, 1);
+                    if (hp <= 0) endGame(false);
                 }
             }
+        });
+    });
+
+    // Enemies
+    enemies.forEach((e, ei) => {
+        e.update();
+        e.draw();
+        
+        // 碰撞玩家
+        if (e.y + e.h > player.y && e.x < player.x + 40 && e.x + e.w > player.x - 40) {
+            playSound('error');
+            hp--;
+            enemies.splice(ei, 1);
+            if (hp <= 0) endGame(false);
         }
 
-        function resetGame() {
-            moves = 0; matched = 0; flippedCards = [];
-            document.getElementById('moves').innerText = '0';
-            document.getElementById('overlay').style.display = 'none';
-            init();
+        // 超出邊界重新生成
+        if (e.y > height) {
+            spawnEnemies();
         }
+    });
 
-        init();
-    </script>
+    requestAnimationFrame(gameLoop);
+}
+
+/** 事件監聽 **/
+canvas.addEventListener('mousemove', (e) => {
+    if (player) player.x = e.clientX;
+});
+
+canvas.addEventListener('touchmove', (e) => {
+    if (player) {
+        player.x = e.touches[0].clientX;
+        e.preventDefault();
+    }
+}, { passive: false });
+
+canvas.addEventListener('mousedown', () => {
+    if (gameState === 'PLAYING') {
+        bullets.push(new Bullet(player.x, player.y));
+        playSound('shoot');
+    }
+});
+
+canvas.addEventListener('touchstart', (e) => {
+    if (gameState === 'PLAYING') {
+        bullets.push(new Bullet(player.x, player.y));
+        playSound('shoot');
+        e.preventDefault();
+    }
+}, { passive: false });
+
+</script>
 </body>
 </html>
