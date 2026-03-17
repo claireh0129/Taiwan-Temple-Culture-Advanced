@@ -3,105 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣廟宇文化配對遊戲 - 實景版</title>
+    <title>台灣廟宇文化配對遊戲 - 5x4 完美版</title>
     <style>
         :root {
             --temple-red: #8e1a1a;
             --temple-gold: #d4af37;
-            --bg-color: #2c0b0b; /* 深色底襯托華麗感 */
+            --bg-dark: #1a0505;
         }
 
-        body {
+        /* 核心設定：禁止捲動並撐滿全螢幕 */
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden; 
+            background-color: var(--bg-dark);
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            background-color: var(--bg-color);
-            background-image: radial-gradient(#4a1212 1px, transparent 1px);
-            background-size: 20px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0;
-            padding: 10px;
-            height: 100vh;
-            overflow: hidden;
-            color: #fff;
+            color: white;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        h1 { color: var(--temple-gold); font-size: 1.2rem; margin: 5px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .stats { font-size: 0.9rem; margin-bottom: 8px; color: #eee; }
+        h1 { font-size: 1.1rem; margin: 8px 0 2px 0; color: var(--temple-gold); }
+        .stats { font-size: 0.8rem; margin-bottom: 5px; }
 
-        /* 極致縮減尺寸以符合單一頁面 */
+        /* 5x4 網格系統：關鍵在於使用 vh 單位確保不超出高度 */
         .game-container {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(5, 1fr); /* 5 欄 */
+            grid-template-rows: repeat(4, 1fr);    /* 4 列 */
             gap: 6px;
             width: 95vw;
-            max-width: 800px;
-            max-height: 80vh;
+            max-width: 700px;
+            height: 78vh; /* 限制總高度在 78% 的螢幕內 */
+            perspective: 1000px;
         }
 
-        .card { aspect-ratio: 4/5; cursor: pointer; perspective: 1000px; }
+        .card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
         .card-inner {
-            position: relative; width: 100%; height: 100%;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease;
             transform-style: preserve-3d;
+            border-radius: 4px;
         }
 
-        .card.flipped .card-inner { transform: rotateY(180deg); }
-        .card.matched .card-inner { opacity: 0.6; filter: grayscale(50%); }
+        /* 翻牌邏輯：翻牌後不位移 */
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
 
         .card-front, .card-back {
-            position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; border-radius: 4px;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 4px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            box-sizing: border-box; overflow: hidden;
+            box-sizing: border-box;
         }
 
-        /* 華麗背面設計 */
+        /* 華麗背面：紅底金框 */
         .card-back {
-            background: linear-gradient(135deg, #b32428 0%, #8e1a1a 100%);
-            border: 3px double var(--temple-gold);
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
-            position: relative;
+            background: radial-gradient(circle, #b32428, #7a1111);
+            border: 2px solid var(--temple-gold);
+            z-index: 2;
         }
         .card-back::after {
-            content: "🧧"; font-size: 1.5rem; filter: drop-shadow(0 0 5px gold);
+            content: "🧧"; font-size: 1.2rem; filter: drop-shadow(0 0 3px gold);
         }
 
-        /* 正面樣式 */
+        /* 正面：白底 */
         .card-front {
             background-color: #fff;
             transform: rotateY(180deg);
+            z-index: 1;
             border: 1px solid var(--temple-gold);
-            color: #333;
+            color: #222;
         }
 
-        /* 圖片卡樣式 */
+        /* 圖片處理：縮小後的適配 */
         .real-img {
             width: 100%; height: 100%; object-fit: cover;
         }
         .img-overlay {
             position: absolute; bottom: 0; width: 100%;
-            background: rgba(142, 26, 26, 0.8); color: white;
-            font-size: 0.6rem; text-align: center; padding: 2px 0;
+            background: rgba(142, 26, 26, 0.85); color: #fff;
+            font-size: 0.55rem; text-align: center; padding: 2px 0;
         }
 
-        /* 文字卡樣式 */
-        .text-container { padding: 5px; text-align: center; }
+        /* 文字階層優化 */
+        .text-container { padding: 4px; text-align: center; }
         .main-term {
-            font-size: 0.85rem; font-weight: 900; color: #b32428;
-            display: block; border-bottom: 1px solid #ddd; margin-bottom: 4px; padding-bottom: 2px;
+            font-size: 0.8rem; font-weight: 900; color: #b32428;
+            display: block; border-bottom: 1px solid #eee; margin-bottom: 2px;
         }
-        .sub-desc { font-size: 0.65rem; color: #555; display: block; line-height: 1.2; }
+        .sub-desc { font-size: 0.6rem; color: #555; display: block; line-height: 1.1; }
 
+        /* 結束畫面 */
         #overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+            background: rgba(0,0,0,0.95); flex-direction: column; justify-content: center; align-items: center; z-index: 999;
         }
-        button { padding: 8px 20px; background: var(--temple-gold); border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        button { padding: 8px 20px; background: var(--temple-gold); border: none; font-weight: bold; border-radius: 4px; cursor: pointer; }
 
-        @media (max-width: 500px) {
-            .game-container { grid-template-columns: repeat(4, 1fr); }
-            h1 { font-size: 1rem; }
+        @media (max-width: 400px) {
+            h1 { font-size: 0.9rem; }
+            .game-container { gap: 4px; }
         }
     </style>
 </head>
@@ -113,24 +128,23 @@
     <div class="game-container" id="gameBoard"></div>
 
     <div id="overlay">
-        <h2 style="color: var(--temple-gold);">🎊 大吉 🎊</h2>
-        <p>恭喜完成挑戰！</p>
-        <button onclick="resetGame()">再次挑戰</button>
+        <h2 style="color: var(--temple-gold); font-size: 2.5rem;">🎊 大吉 🎊</h2>
+        <p>恭喜完成所有配對！</p>
+        <button onclick="resetGame()">再次挑戰 (Play Again)</button>
     </div>
 
     <script>
-        // 真實圖片網址 (使用 Unsplash 示意，建議之後換成你自己的精確廟宇圖)
         const images = {
-            'caishen': 'https://images.unsplash.com/photo-1610450949065-1f2842486981?auto=format&fit=crop&w=300&q=80', // 財神示意
-            'wenchang': 'https://images.unsplash.com/photo-1590012314607-cda9d9b699ae?auto=format&fit=crop&w=300&q=80', // 文昌/文具示意
-            'tianhou': 'https://images.unsplash.com/photo-1620310936735-3b9f85ba6783?auto=format&fit=crop&w=300&q=80', // 廟宇外觀
-            'kong': 'https://images.unsplash.com/photo-1599818817366-0775d7426162?auto=format&fit=crop&w=300&q=80', // 孔廟示意
-            'fude': 'https://images.unsplash.com/photo-1628153303889-983617307044?auto=format&fit=crop&w=300&q=80', // 土地公示意
-            'xingtian': 'https://images.unsplash.com/photo-1543731068-7e0f5beff43a?auto=format&fit=crop&w=300&q=80', // 關公/行天宮示意
-            'right-gate': 'https://images.unsplash.com/photo-1605553551528-76579c372658?auto=format&fit=crop&w=300&q=80', // 龍門入口
-            'left-gate': 'https://images.unsplash.com/photo-1605553551528-76579c372658?auto=format&fit=crop&w=300&q=80', // 虎門出口
-            '筊': 'https://images.unsplash.com/photo-1613253757476-c56088248555?auto=format&fit=crop&w=300&q=80', // 筊杯
-            'sticks': 'https://images.unsplash.com/photo-1628153303632-411a77484d41?auto=format&fit=crop&w=300&q=80' // 籤筒
+            'caishen': 'https://images.unsplash.com/photo-1610450949065-1f2842486981?auto=format&fit=crop&w=300&q=80',
+            'wenchang': 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=300&q=80',
+            'tianhou': 'https://images.unsplash.com/photo-1632230103932-840810452932?auto=format&fit=crop&w=300&q=80',
+            'kong': 'https://images.unsplash.com/photo-1590012314607-cda9d9b699ae?auto=format&fit=crop&w=300&q=80',
+            'fude': 'https://images.unsplash.com/photo-1628153303889-983617307044?auto=format&fit=crop&w=300&q=80',
+            'xingtian': 'https://images.unsplash.com/photo-1543731068-7e0f5beff43a?auto=format&fit=crop&w=300&q=80',
+            'right-gate': 'https://images.unsplash.com/photo-1605553551528-76579c372658?auto=format&fit=crop&w=300&q=80',
+            'left-gate': 'https://images.unsplash.com/photo-1599818817366-0775d7426162?auto=format&fit=crop&w=300&q=80',
+            '筊': 'https://images.unsplash.com/photo-1613253757476-c56088248555?auto=format&fit=crop&w=300&q=80',
+            'sticks': 'https://images.unsplash.com/photo-1628153303632-411a77484d41?auto=format&fit=crop&w=300&q=80'
         };
 
         const pairs = [
@@ -140,8 +154,8 @@
             { img: 'kong', main: '孔廟(Kǒngmiào)', sub: '孔子 (Kǒngzǐ)' },
             { img: 'fude', main: '福德宮(Fúdégōng)', sub: '土地公 (Tǔdìgōng)' },
             { img: 'xingtian', main: '行天宮(Xíngtiāngōng)', sub: '關聖帝君 (Guānshèng dìjūn)' },
-            { img: 'right-gate', main: '龍門進(Lóng mén jìn)', sub: '', note: '箭頭處：右側入口' },
-            { img: 'left-gate', main: '虎門出(Hǔ mén chū)', sub: '', note: '箭頭處：左側出口' },
+            { img: 'right-gate', main: '龍門進(Lóng mén jìn)', sub: '', note: '面對廟宇右側' },
+            { img: 'left-gate', main: '虎門出(Hǔ mén chū)', sub: '', note: '面對廟宇左側' },
             { img: '筊', main: '擲筊(Zhíjiǎo)', sub: '請示神明 (qǐngshì shénmíng)' },
             { img: 'sticks', main: '抽籤(Chōuqiān)', sub: '尋求指引 (xúnqiú zhǐyǐn)' }
         ];
