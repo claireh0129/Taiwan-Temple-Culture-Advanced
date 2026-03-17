@@ -127,4 +127,84 @@
             'kong': 'https://images.unsplash.com/photo-1599818817366-0775d7426162?auto=format&fit=crop&w=300&q=80', // 孔廟示意
             'fude': 'https://images.unsplash.com/photo-1628153303889-983617307044?auto=format&fit=crop&w=300&q=80', // 土地公示意
             'xingtian': 'https://images.unsplash.com/photo-1543731068-7e0f5beff43a?auto=format&fit=crop&w=300&q=80', // 關公/行天宮示意
-            'right-gate': '
+            'right-gate': 'https://images.unsplash.com/photo-1605553551528-76579c372658?auto=format&fit=crop&w=300&q=80', // 龍門入口
+            'left-gate': 'https://images.unsplash.com/photo-1605553551528-76579c372658?auto=format&fit=crop&w=300&q=80', // 虎門出口
+            '筊': 'https://images.unsplash.com/photo-1613253757476-c56088248555?auto=format&fit=crop&w=300&q=80', // 筊杯
+            'sticks': 'https://images.unsplash.com/photo-1628153303632-411a77484d41?auto=format&fit=crop&w=300&q=80' // 籤筒
+        };
+
+        const pairs = [
+            { img: 'caishen', main: '財神爺(Cáishén yé)', sub: '保佑財運、事業 (bǎoyòu cáiyùn shìyè)' },
+            { img: 'wenchang', main: '文昌帝君(Wénchāng dìjūn)', sub: '保佑學業、考試 (bǎoyòu xiéyè kǎoshì)' },
+            { img: 'tianhou', main: '天后宮(Tiānhòu gōng)', sub: '媽祖 (Māzǔ)' },
+            { img: 'kong', main: '孔廟(Kǒngmiào)', sub: '孔子 (Kǒngzǐ)' },
+            { img: 'fude', main: '福德宮(Fúdégōng)', sub: '土地公 (Tǔdìgōng)' },
+            { img: 'xingtian', main: '行天宮(Xíngtiāngōng)', sub: '關聖帝君 (Guānshèng dìjūn)' },
+            { img: 'right-gate', main: '龍門進(Lóng mén jìn)', sub: '', note: '箭頭處：右側入口' },
+            { img: 'left-gate', main: '虎門出(Hǔ mén chū)', sub: '', note: '箭頭處：左側出口' },
+            { img: '筊', main: '擲筊(Zhíjiǎo)', sub: '請示神明 (qǐngshì shénmíng)' },
+            { img: 'sticks', main: '抽籤(Chōuqiān)', sub: '尋求指引 (xúnqiú zhǐyǐn)' }
+        ];
+
+        let cardsData = [];
+        let flippedCards = [];
+        let moves = 0;
+        let matched = 0;
+
+        function init() {
+            cardsData = [];
+            pairs.forEach((p, i) => {
+                cardsData.push({ type: 'img', content: images[p.img], note: p.note, id: i });
+                cardsData.push({ type: 'text', main: p.main, sub: p.sub, id: i });
+            });
+            cardsData.sort(() => Math.random() - 0.5);
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+            cardsData.forEach((d, i) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-inner" onclick="flip(this)" data-id="${d.id}">
+                        <div class="card-back"></div>
+                        <div class="card-front">
+                            ${d.type === 'img' ? 
+                                `<img src="${d.content}" class="real-img">${d.note ? `<div class="img-overlay">${d.note}</div>` : ''}` : 
+                                `<div class="text-container"><span class="main-term">${d.main}</span><span class="sub-desc">${d.sub}</span></div>`
+                            }
+                        </div>
+                    </div>`;
+                board.appendChild(card);
+            });
+        }
+
+        function flip(el) {
+            if (flippedCards.length === 2 || el.parentElement.classList.contains('flipped') || el.parentElement.classList.contains('matched')) return;
+            el.parentElement.classList.add('flipped');
+            flippedCards.push(el);
+            if (flippedCards.length === 2) {
+                moves++; document.getElementById('moves').innerText = moves;
+                if (flippedCards[0].dataset.id === flippedCards[1].dataset.id) {
+                    flippedCards.forEach(c => c.parentElement.classList.add('matched'));
+                    matched++;
+                    flippedCards = [];
+                    if (matched === 10) setTimeout(() => document.getElementById('overlay').style.display = 'flex', 500);
+                } else {
+                    setTimeout(() => {
+                        flippedCards.forEach(c => c.parentElement.classList.remove('flipped'));
+                        flippedCards = [];
+                    }, 1000);
+                }
+            }
+        }
+
+        function resetGame() {
+            moves = 0; matched = 0; flippedCards = [];
+            document.getElementById('moves').innerText = '0';
+            document.getElementById('overlay').style.display = 'none';
+            init();
+        }
+
+        init();
+    </script>
+</body>
+</html>
