@@ -3,79 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>闖關遊戲——廟宇文化</title>
+    <title>飛行闖關遊戲——臺灣廟宇文化</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Zpix&family=Press+Start+2P&display=swap');
 
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Press Start 2P', cursive, "Microsoft JhengHei", sans-serif;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: #000;
+            font-family: "Microsoft JhengHei", sans-serif;
         }
 
         #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: relative; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        canvas {
-            display: block;
-            background: linear-gradient(to bottom, #001133, #003366);
-            touch-action: none;
-        }
+        canvas { display: block; background: linear-gradient(to bottom, #050b1a, #1a2a6c); touch-action: none; }
 
         #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            color: white;
-            padding: 20px;
-            box-sizing: border-box;
-            text-shadow: 2px 2px #000;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; color: white; box-sizing: border-box;
         }
 
         .screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.8);
-            pointer-events: auto;
-            text-align: center;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.85); pointer-events: auto; text-align: center; padding: 20px;
         }
 
         .hidden { display: none !important; }
 
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            background: #ffcc00;
-            border: 4px solid #fff;
-            color: #000;
-            cursor: pointer;
-            margin-top: 20px;
-            font-family: inherit;
+        /* 標題與字體調整 */
+        .main-title {
+            font-size: 36px; color: #ffcc00; font-weight: bold;
+            margin-bottom: 20px; text-shadow: 4px 4px #c0392b;
+            line-height: 1.4;
         }
 
-        button:active { transform: scale(0.95); }
+        .desc-box {
+            background: rgba(255, 255, 255, 0.1); border: 2px solid #ffcc00;
+            padding: 20px; border-radius: 10px; max-width: 500px;
+            margin-bottom: 30px; line-height: 1.8; font-size: 18px;
+        }
 
-        h1 { font-size: 24px; color: #ffcc00; margin-bottom: 30px; line-height: 1.5; }
+        .op-title { color: #00ffcc; font-weight: bold; margin-top: 10px; }
+
+        button {
+            padding: 15px 40px; font-size: 22px; background: #ffcc00;
+            border: 4px solid #fff; color: #000; cursor: pointer;
+            font-family: inherit; font-weight: bold; transition: 0.2s;
+        }
+
+        button:hover { background: #fff; border-color: #ffcc00; }
+        button:active { transform: scale(0.9); }
+
+        .hp-bar { position: absolute; top: 20px; left: 20px; font-size: 24px; pointer-events: none; }
+        .level-indicator { position: absolute; top: 20px; right: 20px; font-size: 20px; color: #ffcc00; }
     </style>
 </head>
 <body>
@@ -85,273 +68,177 @@
     
     <div id="ui-layer">
         <div id="start-screen" class="screen">
-            <h1>闖關遊戲<br>——廟宇文化——</h1>
-            <p style="color: #aaa;">滑鼠/觸控移動，點擊發射</p>
+            <div class="main-title">飛行闖關遊戲<br>——臺灣廟宇文化——</div>
+            <div class="desc-box">
+                <span style="color: #ffcc00;">【遊戲說明】</span><br>
+                你是飛行員，你要透過射擊正確的對應選項通關。<br>
+                你只有三條命，當 HP 歸零時遊戲結束。<br>
+                <div class="op-title">【操作說明】</div>
+                使用滑鼠/觸控移動，並點擊發射。
+            </div>
             <button onclick="startGame()">開始遊戲</button>
         </div>
 
         <div id="game-over-screen" class="screen hidden">
-            <h1 id="end-title">遊戲結束</h1>
-            <p id="end-score"></p>
-            <button onclick="location.reload()">重新挑戰</button>
+            <div id="end-title" class="main-title">遊戲結束</div>
+            <p id="end-score" style="font-size: 20px; margin-bottom: 30px;"></p>
+            <button onclick="location.reload()">重新開始</button>
+        </div>
+
+        <div id="ingame-ui" class="hidden">
+            <div class="hp-bar" id="hp-display"></div>
+            <div class="level-indicator" id="lvl-display"></div>
         </div>
     </div>
 </div>
 
 <script>
-/** 遊戲資料設定 **/
+/** 遊戲資料核心 **/
 const questions = [
-    { q: "財神爺\n(Cáishén yé)", a: "保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", options: ["保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", "保佑健康平安", "保佑航海安全"] },
-    { q: "文昌帝君\n(Wénchāng dìjūn)", a: "保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", options: ["保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", "保佑生意興隆", "保佑姻緣美滿"] },
-    { q: "天后宮\n(Tiānhòu gōng)", a: "媽祖\n(Māzǔ)", options: ["媽祖\n(Māzǔ)", "觀世音", "關聖帝君"] },
-    { q: "孔廟\n(Kǒngmiào)", a: "孔子\n(Kǒngzǐ)", options: ["孔子\n(Kǒngzǐ)", "老子", "孟子"] },
-    { q: "福德宮\n(Fúdégōng)", a: "土地公\n(Tǔdìgōng)", options: ["土地公\n(Tǔdìgōng)", "城隍爺", "月下老人"] },
-    { q: "行天宮\n(Xíngtiāngōng)", a: "關聖帝君\n(Guānshèng dìjūn)", options: ["關聖帝君\n(Guānshèng dìjūn)", "保生大帝", "彌勒佛"] },
-    { q: "龍門進\n(Lóng mén jìn)", a: "從廟宇右側門口進入", options: ["從廟宇右側門口進入", "從廟宇左側門口進入", "從正門直接進入"] },
-    { q: "虎門出\n(Hǔ mén chū)", a: "從廟宇左側門口出去", options: ["從廟宇左側門口出去", "從廟宇右側門口出去", "從後門出去"] },
-    { q: "擲筊\n(Zhíjiǎo)", a: "請示神明\n(qǐngshì shénmíng)", options: ["請示神明\n(qǐngshì shénmíng)", "燒香禮拜", "清理桌面"] },
-    { q: "抽籤\n(Chōuqiān)", a: "尋求指引\n(xúnqiú zhǐyǐn)", options: ["尋求指引\n(xúnqiú zhǐyǐn)", "祈求財富", "還願儀式"] }
+    { q: "財神爺\n(Cáishén yé)", a: "保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", opts: ["保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", "保佑健康平安", "保佑航海安全"] },
+    { q: "文昌帝君\n(Wénchāng dìjūn)", a: "保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", opts: ["保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", "保佑生意興隆", "保佑姻緣美滿"] },
+    { q: "天后宮\n(Tiānhòu gōng)", a: "媽祖\n(Māzǔ)", opts: ["媽祖\n(Māzǔ)", "觀世音", "關聖帝君"] },
+    { q: "孔廟\n(Kǒngmiào)", a: "孔子\n(Kǒngzǐ)", opts: ["孔子\n(Kǒngzǐ)", "老子", "孟子"] },
+    { q: "福德宮\n(Fúdégōng)", a: "土地公\n(Tǔdìgōng)", opts: ["土地公\n(Tǔdìgōng)", "城隍爺", "月下老人"] },
+    { q: "行天宮\n(Xíngtiāngōng)", a: "關聖帝君\n(Guānshèng dìjūn)", opts: ["關聖帝君\n(Guānshèng dìjūn)", "保生大帝", "彌勒佛"] },
+    { q: "龍門進\n(Lóng mén jìn)", a: "從廟宇右側門口進入", opts: ["從廟宇右側門口進入", "從廟宇左側門口進入", "從正門直接進入"] },
+    { q: "虎門出\n(Hǔ mén chū)", a: "從廟宇左側門口出去", opts: ["從廟宇左側門口出去", "從廟宇右側門口出去", "從後門出去"] },
+    { q: "擲筊\n(Zhíjiǎo)", a: "請示神明\n(qǐngshì shénmíng)", opts: ["請示神明\n(qǐngshì shénmíng)", "燒香禮拜", "清理桌面"] },
+    { q: "抽籤\n(Chōuqiān)", a: "尋求指引\n(xúnqiú zhǐyǐn)", opts: ["尋求指引\n(xúnqiú zhǐyǐn)", "祈求財富", "還願儀式"] }
 ];
 
-/** 基礎設定 **/
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-let width, height;
-let player, bullets = [], enemies = [], particles = [];
-let currentLevel = 0;
-let hp = 3;
-let gameState = 'START'; // START, PLAYING, LEVEL_UP, GAMEOVER
-let audioCtx;
+let width, height, player, bullets = [], enemies = [], currentLevel = 0, hp = 3, gameState = 'START', audioCtx;
 
 function initCanvas() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = width;
-    canvas.height = height;
+    width = window.innerWidth; height = window.innerHeight;
+    canvas.width = width; canvas.height = height;
 }
-
 window.addEventListener('resize', initCanvas);
 initCanvas();
 
-/** 音效引擎 **/
+/** 音效 **/
 function playSound(type) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
+    osc.connect(gain); gain.connect(audioCtx.destination);
     const now = audioCtx.currentTime;
     if (type === 'shoot') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.1);
-        osc.start(); osc.stop(now + 0.1);
+        osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.1);
     } else if (type === 'hit') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.2);
-        osc.start(); osc.stop(now + 0.2);
+        osc.frequency.setValueAtTime(500, now); osc.frequency.exponentialRampToValueAtTime(1500, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now + 0.2);
     } else if (type === 'error') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.linearRampToValueAtTime(50, now + 0.3);
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.3);
-        osc.start(); osc.stop(now + 0.3);
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+        gain.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now + 0.3);
     }
 }
 
 /** 遊戲物件 **/
 class Player {
-    constructor() {
-        this.w = 120;
-        this.h = 80;
-        this.x = width / 2;
-        this.y = height - 120;
-    }
+    constructor() { this.x = width / 2; this.y = height - 150; }
     draw() {
-        // 畫像素風飛機
-        ctx.fillStyle = '#ff3333';
-        ctx.fillRect(this.x - 20, this.y, 40, 40); // 機身
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(this.x - 40, this.y + 10, 80, 10); // 機翼
-        
-        // 顯示題目
-        ctx.fillStyle = 'white';
-        ctx.font = '14px "Microsoft JhengHei"';
-        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffcc00'; // 飛機頭
+        ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x-30, this.y+40); ctx.lineTo(this.x+30, this.y+40); ctx.fill();
+        ctx.fillStyle = '#c0392b'; // 機身
+        ctx.fillRect(this.x-10, this.y+10, 20, 50);
+        ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.font = 'bold 18px "Microsoft JhengHei"';
         const lines = questions[currentLevel].q.split('\n');
-        lines.forEach((line, i) => {
-            ctx.fillText(line, this.x, this.y + 65 + (i * 18));
-        });
-    }
-}
-
-class Bullet {
-    constructor(x, y) { this.x = x; this.y = y; this.r = 5; }
-    update() { this.y -= 10; }
-    draw() {
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(this.x - 4, this.y - 4, 8, 8);
+        lines.forEach((l, i) => ctx.fillText(l, this.x, this.y + 85 + (i * 22)));
     }
 }
 
 class Enemy {
-    constructor(text, isCorrect, index) {
-        this.text = text;
-        this.isCorrect = isCorrect;
-        this.w = 140;
-        this.h = 70;
-        this.x = (width / 4) * (index + 1) - this.w / 2;
-        this.y = -100;
+    constructor(text, isCorrect, i) {
+        this.text = text; this.isCorrect = isCorrect; this.w = 160; this.h = 80;
+        this.x = (width / 4) * (i + 1) - this.w / 2; this.y = -100;
         this.speed = 1.5 + (currentLevel * 0.2);
     }
     update() { this.y += this.speed; }
     draw() {
-        ctx.fillStyle = '#fff';
-        ctx.strokeStyle = '#ffcc00';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(this.x, this.y, this.w, this.h);
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(this.x, this.y, this.w, this.h);
-        
-        ctx.fillStyle = 'white';
-        ctx.font = '12px "Microsoft JhengHei"';
+        ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 3; ctx.strokeRect(this.x, this.y, this.w, this.h);
+        ctx.fillStyle = 'rgba(0, 255, 204, 0.1)'; ctx.fillRect(this.x, this.y, this.w, this.h);
+        ctx.fillStyle = 'white'; ctx.font = '14px "Microsoft JhengHei"';
         const lines = this.text.split('\n');
-        lines.forEach((line, i) => {
-            ctx.fillText(line, this.x + this.w / 2, this.y + 30 + (i * 18));
-        });
+        lines.forEach((l, i) => ctx.fillText(l, this.x + this.w / 2, this.y + 35 + (i * 20)));
     }
 }
 
-/** 邏輯控制 **/
 function spawnEnemies() {
     enemies = [];
-    const qData = questions[currentLevel];
-    const shuffled = [...qData.options].sort(() => Math.random() - 0.5);
-    shuffled.forEach((opt, i) => {
-        enemies.push(new Enemy(opt, opt === qData.a, i));
-    });
+    const q = questions[currentLevel];
+    const shuffled = [...q.opts].sort(() => Math.random() - 0.5);
+    shuffled.forEach((opt, i) => enemies.push(new Enemy(opt, opt === q.a, i)));
 }
 
 function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
-    gameState = 'PLAYING';
-    player = new Player();
-    hp = 3;
-    currentLevel = 0;
-    spawnEnemies();
-    requestAnimationFrame(gameLoop);
+    document.getElementById('ingame-ui').classList.remove('hidden');
+    gameState = 'PLAYING'; player = new Player(); hp = 3; currentLevel = 0; spawnEnemies();
+    updateUI(); requestAnimationFrame(gameLoop);
 }
 
-function nextLevel() {
-    currentLevel++;
-    if (currentLevel >= questions.length) {
-        endGame(true);
-    } else {
-        spawnEnemies();
-    }
+function updateUI() {
+    document.getElementById('hp-display').innerText = '❤️'.repeat(hp);
+    document.getElementById('lvl-display').innerText = `關卡: ${currentLevel + 1} / 10`;
 }
 
-function endGame(win) {
-    gameState = 'GAMEOVER';
-    document.getElementById('game-over-screen').classList.remove('hidden');
-    document.getElementById('end-title').innerText = win ? "恭喜通關！" : "再接再厲！";
-    document.getElementById('end-score').innerText = `最終關卡：第 ${currentLevel + 1} 關`;
-}
-
-/** 繪製循環 **/
 function gameLoop() {
     if (gameState !== 'PLAYING') return;
-
     ctx.clearRect(0, 0, width, height);
-
-    // UI: HP and Level
-    ctx.fillStyle = '#ffcc00';
-    ctx.font = '16px "Press Start 2P"';
-    ctx.textAlign = 'left';
-    ctx.fillText(`LV: ${currentLevel + 1}/10`, 20, 40);
-    ctx.fillText(`HP: ${'❤️'.repeat(hp)}`, 20, 70);
-
-    // Player
     player.draw();
-
-    // Bullets
+    
     bullets.forEach((b, bi) => {
-        b.update();
-        b.draw();
+        b.y -= 10;
+        ctx.fillStyle = '#00ffcc'; ctx.fillRect(b.x-3, b.y, 6, 15);
         if (b.y < 0) bullets.splice(bi, 1);
-        
         enemies.forEach((e, ei) => {
             if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
                 bullets.splice(bi, 1);
                 if (e.isCorrect) {
                     playSound('hit');
-                    nextLevel();
+                    currentLevel++;
+                    if (currentLevel >= questions.length) {
+                        gameState = 'WIN';
+                        showEndScreen("恭喜通關！");
+                    } else {
+                        spawnEnemies(); updateUI();
+                    }
                 } else {
-                    playSound('error');
-                    hp--;
-                    enemies.splice(ei, 1);
-                    if (hp <= 0) endGame(false);
+                    playSound('error'); hp--; updateUI(); enemies.splice(ei, 1);
+                    if (hp <= 0) showEndScreen("遊戲結束");
                 }
             }
         });
     });
 
-    // Enemies
     enemies.forEach((e, ei) => {
-        e.update();
-        e.draw();
-        
-        // 碰撞玩家
-        if (e.y + e.h > player.y && e.x < player.x + 40 && e.x + e.w > player.x - 40) {
-            playSound('error');
-            hp--;
-            enemies.splice(ei, 1);
-            if (hp <= 0) endGame(false);
+        e.update(); e.draw();
+        if (e.y + e.h > player.y && e.x < player.x + 30 && e.x + e.w > player.x - 30) {
+            playSound('error'); hp--; updateUI(); enemies.splice(ei, 1);
+            if (hp <= 0) showEndScreen("遊戲結束");
         }
-
-        // 超出邊界重新生成
-        if (e.y > height) {
-            spawnEnemies();
-        }
+        if (e.y > height) spawnEnemies();
     });
-
     requestAnimationFrame(gameLoop);
 }
 
-/** 事件監聽 **/
-canvas.addEventListener('mousemove', (e) => {
-    if (player) player.x = e.clientX;
-});
+function showEndScreen(title) {
+    gameState = 'END';
+    document.getElementById('ingame-ui').classList.add('hidden');
+    document.getElementById('game-over-screen').classList.remove('hidden');
+    document.getElementById('end-title').innerText = title;
+    document.getElementById('end-score').innerText = title === "恭喜通關！" ? "你已精通台灣廟宇文化知識！" : `挑戰結束於第 ${currentLevel + 1} 關`;
+}
 
-canvas.addEventListener('touchmove', (e) => {
-    if (player) {
-        player.x = e.touches[0].clientX;
-        e.preventDefault();
-    }
-}, { passive: false });
-
-canvas.addEventListener('mousedown', () => {
-    if (gameState === 'PLAYING') {
-        bullets.push(new Bullet(player.x, player.y));
-        playSound('shoot');
-    }
-});
-
-canvas.addEventListener('touchstart', (e) => {
-    if (gameState === 'PLAYING') {
-        bullets.push(new Bullet(player.x, player.y));
-        playSound('shoot');
-        e.preventDefault();
-    }
-}, { passive: false });
-
+canvas.addEventListener('mousemove', (e) => { if (player) player.x = e.clientX; });
+canvas.addEventListener('touchmove', (e) => { if (player) { player.x = e.touches[0].clientX; e.preventDefault(); } }, {passive:false});
+const fire = () => { if (gameState === 'PLAYING') { bullets.push({x: player.x, y: player.y}); playSound('shoot'); } };
+canvas.addEventListener('mousedown', fire);
+canvas.addEventListener('touchstart', (e) => { fire(); e.preventDefault(); }, {passive:false});
 </script>
 </body>
 </html>
