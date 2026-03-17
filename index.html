@@ -3,83 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台灣廟宇文化配對遊戲</title>
+    <title>台灣廟宇文化配對遊戲 - 實景版</title>
     <style>
         :root {
-            --temple-red: #b32428;
-            --temple-gold: #f1c40f;
-            --temple-dark: #2c3e50;
-            --card-back: #d35400;
-            --text-main: #1a1a1a;
-            --text-sub: #666;
+            --temple-red: #8e1a1a;
+            --temple-gold: #d4af37;
+            --bg-color: #2c0b0b; /* 深色底襯托華麗感 */
         }
 
         body {
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            background-color: #f7f1e3;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#4a1212 1px, transparent 1px);
+            background-size: 20px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             margin: 0;
-            padding: 5px;
+            padding: 10px;
             height: 100vh;
             overflow: hidden;
+            color: #fff;
         }
 
-        h1 { color: var(--temple-red); font-size: 1.4rem; margin: 5px 0; }
-        .stats { font-size: 1rem; margin-bottom: 5px; font-weight: bold; }
+        h1 { color: var(--temple-gold); font-size: 1.2rem; margin: 5px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .stats { font-size: 0.9rem; margin-bottom: 8px; color: #eee; }
 
+        /* 極致縮減尺寸以符合單一頁面 */
         .game-container {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            width: 98vw;
-            max-width: 950px;
+            gap: 6px;
+            width: 95vw;
+            max-width: 800px;
             max-height: 80vh;
         }
 
         .card { aspect-ratio: 4/5; cursor: pointer; perspective: 1000px; }
         .card-inner {
             position: relative; width: 100%; height: 100%;
-            transition: transform 0.6s; transform-style: preserve-3d;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
         }
 
         .card.flipped .card-inner { transform: rotateY(180deg); }
-        .card.matched .card-inner { border: 3px solid #27ae60; opacity: 0.7; }
+        .card.matched .card-inner { opacity: 0.6; filter: grayscale(50%); }
 
         .card-front, .card-back {
             position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; border-radius: 8px;
+            backface-visibility: hidden; border-radius: 4px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 8px; box-sizing: border-box; background: white;
+            box-sizing: border-box; overflow: hidden;
         }
 
-        .card-back { background-color: var(--card-back); color: white; font-size: 2rem; border: 2px solid #fff; }
+        /* 華麗背面設計 */
+        .card-back {
+            background: linear-gradient(135deg, #b32428 0%, #8e1a1a 100%);
+            border: 3px double var(--temple-gold);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .card-back::after {
+            content: "🧧"; font-size: 1.5rem; filter: drop-shadow(0 0 5px gold);
+        }
 
-        .card-front { transform: rotateY(180deg); border: 2px solid var(--temple-gold); }
+        /* 正面樣式 */
+        .card-front {
+            background-color: #fff;
+            transform: rotateY(180deg);
+            border: 1px solid var(--temple-gold);
+            color: #333;
+        }
 
-        /* 圖片卡牌樣式 */
-        .img-content { width: 90%; height: auto; margin-bottom: 2px; }
-        .gate-label { font-size: 0.65rem; color: var(--temple-red); font-weight: bold; margin-top: -5px; }
+        /* 圖片卡樣式 */
+        .real-img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .img-overlay {
+            position: absolute; bottom: 0; width: 100%;
+            background: rgba(142, 26, 26, 0.8); color: white;
+            font-size: 0.6rem; text-align: center; padding: 2px 0;
+        }
 
-        /* 文字卡牌樣式 */
-        .text-container { text-align: center; width: 100%; }
-        .main-term { font-size: 1rem; font-weight: 900; color: var(--text-main); display: block; margin-bottom: 4px; }
-        .sub-desc { font-size: 0.75rem; color: var(--text-sub); display: block; line-height: 1.2; }
+        /* 文字卡樣式 */
+        .text-container { padding: 5px; text-align: center; }
+        .main-term {
+            font-size: 0.85rem; font-weight: 900; color: #b32428;
+            display: block; border-bottom: 1px solid #ddd; margin-bottom: 4px; padding-bottom: 2px;
+        }
+        .sub-desc { font-size: 0.65rem; color: #555; display: block; line-height: 1.2; }
 
         #overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); color: white; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 100;
+            background: rgba(0,0,0,0.9); flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
+        button { padding: 8px 20px; background: var(--temple-gold); border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
 
-        button { padding: 10px 30px; background: var(--temple-gold); border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-
-        @media (max-width: 600px) {
-            .game-container { grid-template-columns: repeat(4, 1fr); gap: 5px; }
-            .main-term { font-size: 0.85rem; }
-            .sub-desc { font-size: 0.65rem; }
+        @media (max-width: 500px) {
+            .game-container { grid-template-columns: repeat(4, 1fr); }
+            h1 { font-size: 1rem; }
         }
     </style>
 </head>
@@ -91,97 +113,18 @@
     <div class="game-container" id="gameBoard"></div>
 
     <div id="overlay">
-        <h2 style="color: var(--temple-gold); font-size: 3rem;">大吉</h2>
-        <p>Excellent Performance!</p>
-        <button onclick="resetGame()">Play Again</button>
+        <h2 style="color: var(--temple-gold);">🎊 大吉 🎊</h2>
+        <p>恭喜完成挑戰！</p>
+        <button onclick="resetGame()">再次挑戰</button>
     </div>
 
     <script>
-        const svgs = {
-            'caishen': `<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" fill="#b32428" rx="5"/><circle cx="50" cy="55" r="15" fill="#f1c40f"/><text x="50" y="62" font-size="12" text-anchor="middle">財</text><path d="M30,30 L30,20 Q50,10 70,20 L70,30" fill="none" stroke="#b32428" stroke-width="5"/></svg>`,
-            'wenchang': `<svg viewBox="0 0 100 100"><path d="M45,20 L55,20 L55,80 L45,80 Z" fill="#5d4037"/><path d="M40,20 L60,20 L50,10 Z" fill="#2c3e50"/><text x="50" y="60" font-size="30" text-anchor="middle">✍️</text></svg>`,
-            'tianhou': `<svg viewBox="0 0 100 100"><rect x="10" y="40" width="80" height="40" fill="#b32428"/><path d="M5,45 Q50,15 95,45" fill="#f1c40f" stroke="#5d4037"/><rect x="35" y="45" width="30" height="10" fill="white"/><text x="50" y="53" font-size="6" font-weight="bold" text-anchor="middle">天后宮</text></svg>`,
-            'kong': `<svg viewBox="0 0 100 100"><rect x="15" y="40" width="70" height="40" fill="#5d4037"/><path d="M10,40 L50,20 L90,40" stroke="#f1c40f" stroke-width="5" fill="none"/><rect x="40" y="45" width="20" height="10" fill="white"/><text x="50" y="53" font-size="6" font-weight="bold" text-anchor="middle">孔廟</text></svg>`,
-            'fude': `<svg viewBox="0 0 100 100"><rect x="20" y="40" width="60" height="40" fill="#d35400"/><circle cx="50" cy="30" r="10" fill="#fde3a7"/><rect x="40" y="45" width="20" height="10" fill="white"/><text x="50" y="53" font-size="6" font-weight="bold" text-anchor="middle">福德宮</text></svg>`,
-            'xingtian': `<svg viewBox="0 0 100 100"><rect x="10" y="40" width="80" height="40" fill="#b32428"/><rect x="35" y="45" width="30" height="10" fill="white"/><text x="50" y="53" font-size="6" font-weight="bold" text-anchor="middle">行天宮</text><path d="M20,40 L50,10 L80,40" fill="none" stroke="#2c3e50" stroke-width="4"/></svg>`,
-            'right-gate': `<svg viewBox="0 0 100 100"><rect x="10" y="40" width="80" height="50" fill="#eee" stroke="#333"/><rect x="60" y="50" width="20" height="40" fill="#b32428"/><path d="M70,20 L70,45" stroke="red" stroke-width="4" marker-end="url(#arrow)"/><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="red" /></marker></defs></svg>`,
-            'left-gate': `<svg viewBox="0 0 100 100"><rect x="10" y="40" width="80" height="50" fill="#eee" stroke="#333"/><rect x="20" y="50" width="20" height="40" fill="#2c3e50"/><path d="M30,20 L30,45" stroke="red" stroke-width="4" marker-end="url(#arrow)"/></svg>`,
-            '筊': `<svg viewBox="0 0 100 100"><path d="M30,40 Q30,80 50,80 Q70,80 70,40 Z" fill="#b32428" transform="rotate(-20 50 50)"/><path d="M40,30 Q40,70 60,70 Q80,70 80,30 Z" fill="#b32428" transform="rotate(20 60 50)"/></svg>`,
-            'sticks': `<svg viewBox="0 0 100 100"><path d="M30,50 L70,50 L65,90 L35,90 Z" fill="#5d4037"/><line x1="40" y1="20" x2="40" y2="50" stroke="#f1c40f" stroke-width="3"/><line x1="50" y1="10" x2="50" y2="50" stroke="#f1c40f" stroke-width="3"/><line x1="60" y1="20" x2="60" y2="50" stroke="#f1c40f" stroke-width="3"/></svg>`
-        };
-
-        const pairs = [
-            { img: 'caishen', main: '財神爺(Cáishén yé)', sub: '保佑財運、事業 (bǎoyòu cáiyùn shìyè)' },
-            { img: 'wenchang', main: '文昌帝君(Wénchāng dìjūn)', sub: '保佑學業、考試 (bǎoyòu xiéyè kǎoshì)' },
-            { img: 'tianhou', main: '天后宮(Tiānhòu gōng)', sub: '媽祖 (Māzǔ)' },
-            { img: 'kong', main: '孔廟(Kǒngmiào)', sub: '孔子 (Kǒngzǐ)' },
-            { img: 'fude', main: '福德宮(Fúdégōng)', sub: '土地公 (Tǔdìgōng)' },
-            { img: 'xingtian', main: '行天宮(Xíngtiāngōng)', sub: '關聖帝君 (Guānshèng dìjūn)' },
-            { img: 'right-gate', main: '龍門進(Lóng mén jìn)', sub: '', note: '面對廟宇右側' },
-            { img: 'left-gate', main: '虎門出(Hǔ mén chū)', sub: '', note: '面對廟宇左側' },
-            { img: '筊', main: '擲筊(Zhíjiǎo)', sub: '請示神明 (qǐngshì shénmíng)' },
-            { img: 'sticks', main: '抽籤(Chōuqiān)', sub: '尋求指引 (xúnqiú zhǐyǐn)' }
-        ];
-
-        let cardsData = [];
-        let flippedCards = [];
-        let moves = 0;
-        let matched = 0;
-
-        function init() {
-            cardsData = [];
-            pairs.forEach((p, i) => {
-                cardsData.push({ type: 'img', content: p.img, note: p.note, id: i });
-                cardsData.push({ type: 'text', main: p.main, sub: p.sub, id: i });
-            });
-            cardsData.sort(() => Math.random() - 0.5);
-            const board = document.getElementById('gameBoard');
-            board.innerHTML = '';
-            cardsData.forEach((d, i) => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-inner" onclick="flip(this)" data-id="${d.id}">
-                        <div class="card-back">卍</div>
-                        <div class="card-front">
-                            ${d.type === 'img' ? 
-                                `<div class="img-content">${svgs[d.content]}</div>${d.note ? `<div class="gate-label">${d.note}</div>` : ''}` : 
-                                `<div class="text-container"><span class="main-term">${d.main}</span><span class="sub-desc">${d.sub}</span></div>`
-                            }
-                        </div>
-                    </div>`;
-                board.appendChild(card);
-            });
-        }
-
-        function flip(el) {
-            if (flippedCards.length === 2 || el.parentElement.classList.contains('flipped') || el.parentElement.classList.contains('matched')) return;
-            el.parentElement.classList.add('flipped');
-            flippedCards.push(el);
-            if (flippedCards.length === 2) {
-                moves++; document.getElementById('moves').innerText = moves;
-                if (flippedCards[0].dataset.id === flippedCards[1].dataset.id) {
-                    flippedCards.forEach(c => c.parentElement.classList.add('matched'));
-                    matched++;
-                    flippedCards = [];
-                    if (matched === 10) document.getElementById('overlay').style.display = 'flex';
-                } else {
-                    setTimeout(() => {
-                        flippedCards.forEach(c => c.parentElement.classList.remove('flipped'));
-                        flippedCards = [];
-                    }, 1000);
-                }
-            }
-        }
-
-        function resetGame() {
-            moves = 0; matched = 0; flippedCards = [];
-            document.getElementById('moves').innerText = '0';
-            document.getElementById('overlay').style.display = 'none';
-            init();
-        }
-
-        init();
-    </script>
-</body>
-</html>
+        // 真實圖片網址 (使用 Unsplash 示意，建議之後換成你自己的精確廟宇圖)
+        const images = {
+            'caishen': 'https://images.unsplash.com/photo-1610450949065-1f2842486981?auto=format&fit=crop&w=300&q=80', // 財神示意
+            'wenchang': 'https://images.unsplash.com/photo-1590012314607-cda9d9b699ae?auto=format&fit=crop&w=300&q=80', // 文昌/文具示意
+            'tianhou': 'https://images.unsplash.com/photo-1620310936735-3b9f85ba6783?auto=format&fit=crop&w=300&q=80', // 廟宇外觀
+            'kong': 'https://images.unsplash.com/photo-1599818817366-0775d7426162?auto=format&fit=crop&w=300&q=80', // 孔廟示意
+            'fude': 'https://images.unsplash.com/photo-1628153303889-983617307044?auto=format&fit=crop&w=300&q=80', // 土地公示意
+            'xingtian': 'https://images.unsplash.com/photo-1543731068-7e0f5beff43a?auto=format&fit=crop&w=300&q=80', // 關公/行天宮示意
+            'right-gate': '
