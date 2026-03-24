@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>飛行闖關遊戲——臺灣廟宇文化</title>
+    <title>Temple Odyssey: Culture Flyer</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Zpix&family=Press+Start+2P&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Zpix&display=swap');
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: #000;
-            font-family: "Microsoft JhengHei", sans-serif;
+            font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
         }
 
         #game-container {
@@ -18,70 +18,65 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        canvas { display: block; background: linear-gradient(to bottom, #050b1a, #1a2a6c); touch-action: none; }
+        canvas { display: block; background: linear-gradient(to bottom, #02050f, #101a43); touch-action: none; }
 
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; color: white; box-sizing: border-box;
+            pointer-events: none; color: white;
         }
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(0, 0, 0, 0.85); pointer-events: auto; text-align: center; padding: 20px;
+            background: rgba(0, 0, 0, 0.9); pointer-events: auto; text-align: center; padding: 20px;
         }
 
         .hidden { display: none !important; }
 
-        /* 標題與字體調整 */
         .main-title {
-            font-size: 36px; color: #ffcc00; font-weight: bold;
-            margin-bottom: 20px; text-shadow: 4px 4px #c0392b;
-            line-height: 1.4;
+            font-size: 42px; color: #ffcc00; font-weight: bold;
+            margin-bottom: 25px; text-shadow: 5px 5px #c0392b; line-height: 1.3;
         }
 
         .desc-box {
-            background: rgba(255, 255, 255, 0.1); border: 2px solid #ffcc00;
-            padding: 20px; border-radius: 10px; max-width: 500px;
-            margin-bottom: 30px; line-height: 1.8; font-size: 18px;
+            background: rgba(255, 255, 255, 0.1); border: 3px solid #ffcc00;
+            padding: 25px; border-radius: 15px; max-width: 600px;
+            margin-bottom: 30px; line-height: 1.8; font-size: 20px; text-align: left;
         }
-
-        .op-title { color: #00ffcc; font-weight: bold; margin-top: 10px; }
 
         button {
-            padding: 15px 40px; font-size: 22px; background: #ffcc00;
-            border: 4px solid #fff; color: #000; cursor: pointer;
-            font-family: inherit; font-weight: bold; transition: 0.2s;
+            padding: 18px 50px; font-size: 26px; background: #ffcc00;
+            border: 5px solid #fff; color: #000; cursor: pointer;
+            font-weight: bold; box-shadow: 0 5px 0 #b8860b;
         }
 
-        button:hover { background: #fff; border-color: #ffcc00; }
-        button:active { transform: scale(0.9); }
+        button:active { transform: translateY(5px); box-shadow: none; }
 
-        .hp-bar { position: absolute; top: 20px; left: 20px; font-size: 24px; pointer-events: none; }
-        .level-indicator { position: absolute; top: 20px; right: 20px; font-size: 20px; color: #ffcc00; }
+        .hp-bar { position: absolute; top: 25px; left: 25px; font-size: 30px; }
+        .level-indicator { position: absolute; top: 25px; right: 25px; font-size: 24px; color: #ffcc00; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <canvas id="gameCanvas"></canvas>
-    
     <div id="ui-layer">
         <div id="start-screen" class="screen">
             <div class="main-title">飛行闖關遊戲<br>——臺灣廟宇文化——</div>
             <div class="desc-box">
-                <span style="color: #ffcc00;">【遊戲說明】</span><br>
-                你是飛行員，你要透過射擊正確的對應選項通關。<br>
-                你只有三條命，當 HP 歸零時遊戲結束。<br>
-                <div class="op-title">【操作說明】</div>
-                使用滑鼠/觸控移動，並點擊發射。
+                <b style="color: #ffcc00;">【遊戲說明】</b><br>
+                你是飛行員，請射擊與飛機題目對應的正確選項。<br>
+                當 HP 歸零時遊戲結束。<br>
+                <b style="color: #00ffcc;">【操作說明】</b><br>
+                1. 拖曳/移動滑鼠控制飛行。<br>
+                2. 點擊畫面發射子彈。
             </div>
             <button onclick="startGame()">開始遊戲</button>
         </div>
 
         <div id="game-over-screen" class="screen hidden">
             <div id="end-title" class="main-title">遊戲結束</div>
-            <p id="end-score" style="font-size: 20px; margin-bottom: 30px;"></p>
+            <p id="end-score" style="font-size: 24px; margin-bottom: 40px;"></p>
             <button onclick="location.reload()">重新開始</button>
         </div>
 
@@ -93,18 +88,18 @@
 </div>
 
 <script>
-/** 遊戲資料核心 **/
+/** 題庫配置 **/
 const questions = [
-    { q: "財神爺\n(Cáishén yé)", a: "保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", opts: ["保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", "保佑健康平安", "保佑航海安全"] },
-    { q: "文昌帝君\n(Wénchāng dìjūn)", a: "保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", opts: ["保佑學業、考試\n(bǎoyòu xiéyè kǎoshì)", "保佑生意興隆", "保佑姻緣美滿"] },
-    { q: "天后宮\n(Tiānhòu gōng)", a: "媽祖\n(Māzǔ)", opts: ["媽祖\n(Māzǔ)", "觀世音", "關聖帝君"] },
-    { q: "孔廟\n(Kǒngmiào)", a: "孔子\n(Kǒngzǐ)", opts: ["孔子\n(Kǒngzǐ)", "老子", "孟子"] },
-    { q: "福德宮\n(Fúdégōng)", a: "土地公\n(Tǔdìgōng)", opts: ["土地公\n(Tǔdìgōng)", "城隍爺", "月下老人"] },
-    { q: "行天宮\n(Xíngtiāngōng)", a: "關聖帝君\n(Guānshèng dìjūn)", opts: ["關聖帝君\n(Guānshèng dìjūn)", "保生大帝", "彌勒佛"] },
-    { q: "龍門進\n(Lóng mén jìn)", a: "從廟宇右側門口進入", opts: ["從廟宇右側門口進入", "從廟宇左側門口進入", "從正門直接進入"] },
-    { q: "虎門出\n(Hǔ mén chū)", a: "從廟宇左側門口出去", opts: ["從廟宇左側門口出去", "從廟宇右側門口出去", "從後門出去"] },
-    { q: "擲筊\n(Zhíjiǎo)", a: "請示神明\n(qǐngshì shénmíng)", opts: ["請示神明\n(qǐngshì shénmíng)", "燒香禮拜", "清理桌面"] },
-    { q: "抽籤\n(Chōuqiān)", a: "尋求指引\n(xúnqiú zhǐyǐn)", opts: ["尋求指引\n(xúnqiú zhǐyǐn)", "祈求財富", "還願儀式"] }
+    { q: "財神爺\n(Cáishén yé)", a: "保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", opts: ["保佑財運、事業\n(bǎoyòu cáiyùn shìyè)", "保佑健康平安\n(jiànkāng píng'ān)", "保佑航海安全\n(hánghǎi ānquán)"] },
+    { q: "文昌帝君\n(Wénchāng dìjūn)", a: "保佑學業、考試\n(bǎoyòu xuéyè kǎoshì)", opts: ["保佑學業、考試\n(bǎoyòu xuéyè kǎoshì)", "保佑生意興隆\n(shēngyì xīnglóng)", "保佑姻緣美滿\n(yīnyuán měimǎn)"] },
+    { q: "天后宮\n(Tiānhòu gōng)", a: "媽祖\n(Māzǔ)", opts: ["媽祖\n(Māzǔ)", "觀世音\n(Guānshìyīn)", "關聖帝君\n(Guānshèng dìjūn)"] },
+    { q: "孔廟\n(Kǒngmiào)", a: "孔子\n(Kǒngzǐ)", opts: ["孔子\n(Kǒngzǐ)", "老子\n(Lǎozǐ)", "孟子\n(Mèngzǐ)"] },
+    { q: "福德宮\n(Fúdégōng)", a: "土地公\n(Tǔdìgōng)", opts: ["土地公\n(Tǔdìgōng)", "城隍爺\n(Chénghuángyé)", "月下老人\n(Yuèxià lǎorén)"] },
+    { q: "行天宮\n(Xíngtiāngōng)", a: "關聖帝君\n(Guānshèng dìjūn)", opts: ["關聖帝君\n(Guānshèng dìjūn)", "保生大帝\n(Bǎoshēng dàdì)", "彌勒佛\n(Mílèfó)"] },
+    { q: "龍門進\n(Lóng mén jìn)", a: "從廟宇右側門口進入\n(rù)", opts: ["從廟宇右側門口進入\n(rù)", "從廟宇左側門口進入\n(rù)", "從正門直接進入\n(rù)"] },
+    { q: "虎門出\n(Hǔ mén chū)", a: "從廟宇左側門口出去\n(chū)", opts: ["從廟宇左側門口出去\n(chū)", "從廟宇右側門口出去\n(chū)", "從後門出去\n(chū)"] },
+    { q: "擲筊\n(Zhíjiǎo)", a: "請示神明\n(qǐngshì shénmíng)", opts: ["請示神明\n(qǐngshì shénmíng)", "燒香禮拜\n(shāoxiāng lǐbài)", "清理桌面\n(qīnglǐ zhuōmiàn)"] },
+    { q: "抽籤\n(Chōuqiān)", a: "尋求指引\n(xúnqiú zhǐyǐn)", opts: ["尋求指引\n(xúnqiú zhǐyǐn)", "祈求財富\n(qíqiú cáifù)", "還願儀式\n(huányuàn yíshì)"] }
 ];
 
 const canvas = document.getElementById('gameCanvas');
@@ -118,7 +113,7 @@ function initCanvas() {
 window.addEventListener('resize', initCanvas);
 initCanvas();
 
-/** 音效 **/
+/** 音效產生器 **/
 function playSound(type) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
@@ -126,44 +121,82 @@ function playSound(type) {
     osc.connect(gain); gain.connect(audioCtx.destination);
     const now = audioCtx.currentTime;
     if (type === 'shoot') {
-        osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
-        gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.1);
+        osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+        gain.gain.setValueAtTime(0.05, now); osc.start(); osc.stop(now + 0.1);
     } else if (type === 'hit') {
-        osc.frequency.setValueAtTime(500, now); osc.frequency.exponentialRampToValueAtTime(1500, now + 0.2);
-        gain.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now + 0.2);
+        osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.15);
+        gain.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.15);
     } else if (type === 'error') {
-        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(80, now);
         gain.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now + 0.3);
     }
 }
 
-/** 遊戲物件 **/
+/** 像素風飛機繪製 **/
 class Player {
-    constructor() { this.x = width / 2; this.y = height - 150; }
+    constructor() { this.x = width / 2; this.y = height - 180; }
     draw() {
-        ctx.fillStyle = '#ffcc00'; // 飛機頭
-        ctx.beginPath(); ctx.moveTo(this.x, this.y); ctx.lineTo(this.x-30, this.y+40); ctx.lineTo(this.x+30, this.y+40); ctx.fill();
-        ctx.fillStyle = '#c0392b'; // 機身
-        ctx.fillRect(this.x-10, this.y+10, 20, 50);
-        ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.font = 'bold 18px "Microsoft JhengHei"';
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        
+        // 機身
+        ctx.fillStyle = '#d32f2f'; // 深紅
+        ctx.fillRect(-12, 10, 24, 50);
+        // 機頭
+        ctx.fillStyle = '#ffcc00'; 
+        ctx.fillRect(-8, -5, 16, 15);
+        // 側翼
+        ctx.fillStyle = '#f44336';
+        ctx.fillRect(-45, 25, 90, 12);
+        // 尾翼
+        ctx.fillStyle = '#b71c1c';
+        ctx.fillRect(-20, 55, 40, 8);
+        // 座艙罩
+        ctx.fillStyle = '#81d4fa';
+        ctx.fillRect(-6, 5, 12, 10);
+
+        // 題目文字 (加大)
+        ctx.fillStyle = 'white'; ctx.textAlign = 'center'; 
+        ctx.font = 'bold 24px "Microsoft JhengHei"';
         const lines = questions[currentLevel].q.split('\n');
-        lines.forEach((l, i) => ctx.fillText(l, this.x, this.y + 85 + (i * 22)));
+        lines.forEach((l, i) => {
+            ctx.shadowBlur = 4; ctx.shadowColor = "black";
+            ctx.fillText(l, 0, 100 + (i * 30));
+        });
+        ctx.restore();
     }
 }
 
+/** 選項方塊 **/
 class Enemy {
     constructor(text, isCorrect, i) {
-        this.text = text; this.isCorrect = isCorrect; this.w = 160; this.h = 80;
-        this.x = (width / 4) * (i + 1) - this.w / 2; this.y = -100;
-        this.speed = 1.5 + (currentLevel * 0.2);
+        this.text = text; this.isCorrect = isCorrect; 
+        this.w = width < 600 ? width * 0.28 : 220; // 響應式寬度
+        this.h = 100;
+        this.x = (width / 4) * (i + 1) - this.w / 2;
+        this.y = -150;
+        this.speed = 1.2; // 調整為慢速且恆定
     }
     update() { this.y += this.speed; }
     draw() {
-        ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 3; ctx.strokeRect(this.x, this.y, this.w, this.h);
-        ctx.fillStyle = 'rgba(0, 255, 204, 0.1)'; ctx.fillRect(this.x, this.y, this.w, this.h);
-        ctx.fillStyle = 'white'; ctx.font = '14px "Microsoft JhengHei"';
+        ctx.save();
+        // 邊框與背景
+        ctx.shadowBlur = 10; ctx.shadowColor = this.isCorrect ? "rgba(0,255,204,0.3)" : "rgba(255,255,255,0.1)";
+        ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 4;
+        ctx.strokeRect(this.x, this.y, this.w, this.h);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(this.x, this.y, this.w, this.h);
+        
+        // 選項文字 (加大並包含拼音)
+        ctx.fillStyle = 'white'; ctx.textAlign = 'center';
+        ctx.font = 'bold 20px "Microsoft JhengHei"';
         const lines = this.text.split('\n');
-        lines.forEach((l, i) => ctx.fillText(l, this.x + this.w / 2, this.y + 35 + (i * 20)));
+        lines.forEach((l, i) => {
+            // 第一行中文加粗加大，第二行拼音略小
+            ctx.font = i === 0 ? 'bold 20px "Microsoft JhengHei"' : '16px "Microsoft JhengHei"';
+            ctx.fillText(l, this.x + this.w / 2, this.y + 40 + (i * 26));
+        });
+        ctx.restore();
     }
 }
 
@@ -183,33 +216,34 @@ function startGame() {
 
 function updateUI() {
     document.getElementById('hp-display').innerText = '❤️'.repeat(hp);
-    document.getElementById('lvl-display').innerText = `關卡: ${currentLevel + 1} / 10`;
+    document.getElementById('lvl-display').innerText = `Progress: ${currentLevel + 1} / 10`;
 }
 
 function gameLoop() {
     if (gameState !== 'PLAYING') return;
     ctx.clearRect(0, 0, width, height);
+    
+    // 繪製裝飾背景點 (簡單星空)
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    for(let i=0; i<20; i++) ctx.fillRect((Date.now()*0.05 + i*100)%width, (i*200)%height, 2, 2);
+
     player.draw();
     
     bullets.forEach((b, bi) => {
-        b.y -= 10;
-        ctx.fillStyle = '#00ffcc'; ctx.fillRect(b.x-3, b.y, 6, 15);
+        b.y -= 12;
+        ctx.fillStyle = '#00ffcc'; ctx.shadowBlur = 8; ctx.shadowColor = "#00ffcc";
+        ctx.fillRect(b.x-4, b.y, 8, 20);
         if (b.y < 0) bullets.splice(bi, 1);
         enemies.forEach((e, ei) => {
             if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h) {
                 bullets.splice(bi, 1);
                 if (e.isCorrect) {
-                    playSound('hit');
-                    currentLevel++;
-                    if (currentLevel >= questions.length) {
-                        gameState = 'WIN';
-                        showEndScreen("恭喜通關！");
-                    } else {
-                        spawnEnemies(); updateUI();
-                    }
+                    playSound('hit'); currentLevel++;
+                    if (currentLevel >= questions.length) showEndScreen("恭喜通關！");
+                    else { spawnEnemies(); updateUI(); }
                 } else {
                     playSound('error'); hp--; updateUI(); enemies.splice(ei, 1);
-                    if (hp <= 0) showEndScreen("遊戲結束");
+                    if (hp <= 0) showEndScreen("再接再厲");
                 }
             }
         });
@@ -217,9 +251,10 @@ function gameLoop() {
 
     enemies.forEach((e, ei) => {
         e.update(); e.draw();
-        if (e.y + e.h > player.y && e.x < player.x + 30 && e.x + e.w > player.x - 30) {
+        // 碰撞判定
+        if (e.y + e.h > player.y && e.x < player.x + 30 && e.x + e.w > player.x - 30 && e.y < player.y + 60) {
             playSound('error'); hp--; updateUI(); enemies.splice(ei, 1);
-            if (hp <= 0) showEndScreen("遊戲結束");
+            if (hp <= 0) showEndScreen("再接再厲");
         }
         if (e.y > height) spawnEnemies();
     });
@@ -231,9 +266,10 @@ function showEndScreen(title) {
     document.getElementById('ingame-ui').classList.add('hidden');
     document.getElementById('game-over-screen').classList.remove('hidden');
     document.getElementById('end-title').innerText = title;
-    document.getElementById('end-score').innerText = title === "恭喜通關！" ? "你已精通台灣廟宇文化知識！" : `挑戰結束於第 ${currentLevel + 1} 關`;
+    document.getElementById('end-score').innerText = title === "恭喜通關！" ? "你已成為臺灣廟宇文化達人！" : `挑戰在第 ${currentLevel + 1} 關結束`;
 }
 
+// 交互
 canvas.addEventListener('mousemove', (e) => { if (player) player.x = e.clientX; });
 canvas.addEventListener('touchmove', (e) => { if (player) { player.x = e.touches[0].clientX; e.preventDefault(); } }, {passive:false});
 const fire = () => { if (gameState === 'PLAYING') { bullets.push({x: player.x, y: player.y}); playSound('shoot'); } };
