@@ -78,54 +78,59 @@ function initCanvas() {
 window.addEventListener('resize', initCanvas);
 initCanvas();
 
-/** 音效與背景音樂系統 **/
+/** 強化版 BGM 與音效 **/
 function playSound(type) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const now = audioCtx.currentTime;
     
     if (type === 'bgm') {
-        const loopLen = 2.0;
+        const loopLen = 1.0; // 縮短循環時間增加緊湊感
         const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * loopLen, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < buffer.length; i++) {
             const t = i / audioCtx.sampleRate;
-            // 簡單的 8-bit 低音循環
-            const f = [110, 130, 146, 110][Math.floor(t * 4) % 4];
-            data[i] = Math.sin(2 * Math.PI * f * t) * 0.1 * (1 - (t * 4 % 1));
+            // 刺激的低音 Bassline: E1 -> G1 -> A1 -> E1
+            const freqArr = [41.2, 49, 55, 41.2];
+            const f = freqArr[Math.floor(t * 4) % 4];
+            // 結合鋸齒波(刺激感)與三角波(厚度)
+            const val = (t * f % 1) < 0.5 ? 1 : -1; // 方波感
+            data[i] = val * 0.15 * Math.exp(-3 * (t * 8 % 1)); // 增加打擊感
         }
         bgmNode = audioCtx.createBufferSource();
         bgmNode.buffer = buffer;
         bgmNode.loop = true;
         const gain = audioCtx.createGain();
-        gain.gain.value = 0.3; 
+        gain.gain.value = 0.6; // 音量顯著調大
         bgmNode.connect(gain);
         gain.connect(audioCtx.destination);
         bgmNode.start();
     } else if (type === 'victory') {
         if(bgmNode) bgmNode.stop();
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]; 
         notes.forEach((f, i) => {
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            osc.frequency.setValueAtTime(f, now + i * 0.15);
-            g.gain.setValueAtTime(0.2, now + i * 0.15);
-            g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.4);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(f, now + i * 0.1);
+            g.gain.setValueAtTime(0.15, now + i * 0.1);
+            g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
             osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.5);
+            osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.4);
         });
     } else {
         const osc = audioCtx.createOscillator();
         const g = audioCtx.createGain();
         osc.connect(g); g.connect(audioCtx.destination);
         if (type === 'shoot') {
-            osc.frequency.setValueAtTime(180, now); osc.frequency.exponentialRampToValueAtTime(700, now + 0.1);
-            g.gain.setValueAtTime(0.06, now); osc.start(); osc.stop(now + 0.1);
+            osc.frequency.setValueAtTime(180, now); osc.frequency.exponentialRampToValueAtTime(700, now + 0.08);
+            g.gain.setValueAtTime(0.08, now); osc.start(); osc.stop(now + 0.08);
         } else if (type === 'hit') {
-            osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
-            g.gain.setValueAtTime(0.1, now); osc.start(); osc.stop(now + 0.1);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+            g.gain.setValueAtTime(0.12, now); osc.start(); osc.stop(now + 0.1);
         } else if (type === 'error') {
-            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, now);
-            g.gain.setValueAtTime(0.15, now); osc.start(); osc.stop(now + 0.3);
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now);
+            g.gain.setValueAtTime(0.2, now); osc.start(); osc.stop(now + 0.3);
         }
     }
 }
@@ -172,7 +177,7 @@ function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('ingame-ui').classList.remove('hidden');
     gameState = 'PLAYING'; player = new Player(); hp = 3; currentLevel = 0; spawnEnemies();
-    playSound('bgm'); // 啟動背景音樂
+    playSound('bgm'); 
     updateUI(); requestAnimationFrame(gameLoop);
 }
 
@@ -215,8 +220,8 @@ function gameLoop() {
 
 function showEndScreen(title) {
     gameState = 'END';
-    if(title === "恭喜通關！") playSound('victory'); // 播放成功音效
-    else if(bgmNode) bgmNode.stop(); // 失敗則停止音樂
+    if(title === "恭喜通關！") playSound('victory'); 
+    else if(bgmNode) bgmNode.stop(); 
     document.getElementById('ingame-ui').classList.add('hidden');
     document.getElementById('game-over-screen').classList.remove('hidden');
     document.getElementById('end-title').innerText = title;
